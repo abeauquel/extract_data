@@ -1,4 +1,4 @@
-
+var fs = require('fs');
 const puppeteer = require('puppeteer');
 
 
@@ -9,29 +9,72 @@ const puppeteer = require('puppeteer');
     args: ['--no-sandbox'],
   });
   const page = await browser.newPage();
+  monLien="https://www.fraicheurquebec.com/liste-des-produits";
 
   console.log("Ouverture de la page ...");
-  await  page.goto('https://www.anime-planet.com/users/desacron/lists/for-people-who-love-reincarnation-andor--71911');
-  console.log("Attente de la navigation ...");
- // await page.waitForNavigation();
-  console.log("Attente du chargement du titre navigation ...");
-  await page.waitForSelector('#siteContainer > div:nth-child(8) > div.pure-1.md-2-3 > h1');
+  await  page.goto(monLien);
+  console.log("Attente du chargement du titre Vérification du titre ...");
+  //await page.waitForNavigation();
+  //console.log("Attente du chargement du titre navigation ...");
+  await page.waitForSelector('#content > div.introduction_liste_produits > h1');
 
-  console.log("Vérification du titre ...");
+
   let title_page = await page.evaluate((sel) => {
     return document.querySelector(sel).innerText;
-  }, '#siteContainer > div:nth-child(8) > div.pure-1.md-2-3 > h1');
+  }, '#content > div.introduction_liste_produits > h1');
 
-  console.log(title_page);
+  console.log("C'est ok "+title_page);
 
-  //#customlistDetails > div > div.pure-5-6 > table > tbody > tr:nth-child(1) > td.tableTitle > h5 > a
-  //#customlistDetails > div > div.pure-5-6 > table > tbody > tr:nth-child(2) > td.tableTitle > h5 > a
-  for(let i=1; i<44;i+=1){
+  let monTexte="";
+  let max = 87;
+  let idMin =1 ;
+  let nomInsert="INSERT_FRUIT_ET_LEGUMES_";
 
-    let test_titre =await page.evaluate((sel) => {
-      return document.querySelector(sel).innerText;
-    }, '#customlistDetails > div > div.pure-5-6 > table > tbody > tr:nth-child('+i+') > td.tableTitle > h5 > a');
-    console.log("TITRE "+i+" : "+test_titre);
+   monTexte+= await lireUnePage(monLien,max, idMin, nomInsert) ;
+  var stream = fs.createWriteStream("script_v2.txt");
+  stream.once('open', function(fd) {
+    stream.write(monTexte);
+    stream.end();
+  });
+
+
+   async function lireUnePage(lien, maxElement, idMin, nomInsert) {
+
+    let monTexte="BEGIN TRANSACTION;";
+
+    j=idMin;
+    for(let i=0; i<maxElement;i+=1){
+      try {
+        let nom_produit = await page.evaluate((sel) => {
+          return document.querySelector(sel).innerText;
+        }, '#heading_'+i+' > h4 > a');
+        ligneTxt="INSERT INTO produit VALUES ("+j+", '"+nom_produit+"', 1, 0);\n";
+
+        console.log(ligneTxt);
+        monTexte+=ligneTxt;
+        j+=1;
+      } catch (e) {
+        console.log(e.toString() );
+      }
+    }
+    monTexte+="COMMIT;"
+    return monTexte;
   }
+  async function genererExeInsert(nomInsert ,maxElement, idMin) {
+    let monTexte="\n\n\n";
+    j=idMin;
+    for(let i=0; i<maxElement;i+=1){
+      monTexte+="db.execSQL("+nomInsert+j+");\n";
+      j++;
+    }
+    return monTexte;
+  }
+
+
+
+
+
+
+
   await browser.close();
 })();
