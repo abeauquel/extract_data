@@ -28,7 +28,7 @@ const puppeteer = require('puppeteer');
   let monTexte="";
   let max = 87;
   let idMin =1 ;
-  let nomInsert="INSERT_FRUIT_ET_LEGUMES_";
+  let nomInsert="INSERT_FRUIT_ET_LEGUMES";
 
    monTexte+= await lireUnePage(monLien,max, idMin, nomInsert) ;
   var stream = fs.createWriteStream("script_v2.txt");
@@ -39,8 +39,8 @@ const puppeteer = require('puppeteer');
 
 
    async function lireUnePage(lien, maxElement, idMin, nomInsert) {
-
-    let monTexte="BEGIN TRANSACTION;";
+    let declaVariable ="final static String "+nomInsert+ " = ";
+    let monTexte=declaVariable+ "\"BEGIN TRANSACTION;\"";
 
     j=idMin;
     for(let i=0; i<maxElement;i+=1){
@@ -48,7 +48,7 @@ const puppeteer = require('puppeteer');
         let nom_produit = await page.evaluate((sel) => {
           return document.querySelector(sel).innerText;
         }, '#heading_'+i+' > h4 > a');
-        ligneTxt="INSERT INTO produit VALUES ("+j+", '"+nom_produit+"', 1, 0);\n";
+        ligneTxt="+ \" INSERT INTO produit VALUES ("+j+", '"+nom_produit+"', 1, 0);\"\n";
 
         console.log(ligneTxt);
         monTexte+=ligneTxt;
@@ -57,7 +57,7 @@ const puppeteer = require('puppeteer');
         console.log(e.toString() );
       }
     }
-    monTexte+="COMMIT;"
+    monTexte+="+ \"COMMIT;\"";
     return monTexte;
   }
   async function genererExeInsert(nomInsert ,maxElement, idMin) {
